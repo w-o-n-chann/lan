@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>News Reader - Công văn Y tế (Chuẩn Hành chính)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* 1. CSS CHO TOÀN VĂN CÔNG VĂN */
+    .official-doc {
+      /* Mặc định font và kích thước cho toàn văn */
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 14pt; /* Kích thước chuẩn cho nội dung */
+      line-height: 1.5;
+      /* Lề chuẩn: Top-Right-Bottom-Left (3-2-2-3 cm) */
+      padding: 3cm 2cm 2cm 3cm; 
+      box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+      background-color: white;
+    }
+
+    /* 2. ĐỊNH DẠNG QUỐC HIỆU - TIÊU NGỮ */
+    .national-header {
+      font-size: 13pt; 
+      font-weight: bold;
+      margin-bottom: 20pt;
+    }
+
+    .national-header .country-name {
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .national-header .motto {
+      font-style: italic;
+      text-align: center;
+      margin-top: -0.5em; 
+      margin-bottom: 0.5em;
+    }
+
+    .national-header .underline {
+      height: 1px;
+      width: 130px; 
+      background-color: black;
+      margin: 0 auto;
+    }
+
+    /* 3. ĐỊNH DẠNG TIÊU ĐỀ, CƠ QUAN BAN HÀNH, SỐ HIỆU */
+    .doc-info {
+      font-size: 13pt;
+      margin-bottom: 20pt;
+    }
+
+    .doc-info .agency {
+      text-align: left;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+
+    .doc-info .doc-meta {
+      text-align: right;
+      font-style: italic;
+    }
+
+    .doc-title {
+      font-size: 16pt;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 20pt;
+      text-transform: uppercase;
+    }
+
+    /* 4. ĐỊNH DẠNG NỘI DUNG, CĂN ĐỀU (JUSTIFY) */
+    .doc-content p {
+      text-align: justify; /* Căn đều nội dung */
+      text-indent: 1.25cm; /* Thụt đầu dòng chuẩn */
+      margin-bottom: 0.5em; /* Khoảng cách giữa các đoạn */
+    }
+    
+    /* Điều chỉnh cho các dòng không cần thụt đầu dòng (như Kính gửi hoặc các mục nhỏ) */
+    .doc-content p.no-indent {
+        text-indent: 0;
+        margin-left: 1.25cm; /* Căn chỉnh các mục nhỏ thụt vào */
+        text-align: left; /* Đảm bảo liệt kê trái */
+    }
+
+    /* Đảm bảo chữ in đậm (strong) không làm mất định dạng */
+    .doc-content strong {
+      font-weight: bold;
+    }
+    
+    /* 5. ĐỊNH DẠNG PHẦN KÍNH GỬI */
+    .doc-to {
+      font-size: 14pt;
+      font-weight: bold;
+      text-align: left;
+      margin-bottom: 1em;
+      text-indent: 0;
+    }
+  </style>
+</head>
+<body class="antialiased bg-gray-50 text-gray-900">
+  <div id="root"></div>
+
+  <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.22.5/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const sampleArticles = [
+    // 1. CHIẾN LƯỢC Y TẾ (Năm 2000 - Dữ liệu cũ nhất)
+    {
+        id: "d8",
+        title: "QUYẾT ĐỊNH Phê duyệt Chiến lược Quốc gia về Bảo vệ, Chăm sóc và Nâng cao sức khỏe nhân dân giai đoạn 2001-2010",
+        summary: "Quyết định của Thủ tướng Chính phủ về Chiến lược Y tế Quốc gia cho thập kỷ đầu tiên của thế kỷ 21, tập trung vào y tế cơ sở và phòng chống suy dinh dưỡng.",
+        docNumber: "01/2000/QĐ-TTg",
+        category: "Chiến lược",
+        author: "Thủ tướng Chính phủ",
+        publishedAt: "2000-12-01",
+        content: 
+            "Kính gửi: Các Bộ, cơ quan ngang Bộ, cơ quan thuộc Chính phủ và Ủy ban nhân dân các tỉnh, thành phố trực thuộc Trung ương.\n\n" +
+            "Để thực hiện Nghị quyết của Đảng về công tác bảo vệ, chăm sóc và nâng cao sức khỏe nhân dân trong tình hình mới, Thủ tướng Chính phủ phê duyệt Chiến lược Y tế Quốc gia giai đoạn 2001-2010 với các mục tiêu sau:\n\n" +
+            "I. MỤC TIÊU TỔNG QUÁT\n" +
+            "1.  Đảm bảo mọi người dân được hưởng các dịch vụ chăm sóc sức khỏe cơ bản, chất lượng, hiệu quả.\n" +
+            "2.  Giảm tỷ lệ mắc và tử vong do các bệnh truyền nhiễm và bệnh không lây nhiễm.\n\n" +
+            "II. CHỈ TIÊU CỤ THỂ (Tóm tắt)\n" +
+            "1.  Giảm tỷ lệ suy dinh dưỡng trẻ em dưới 5 tuổi xuống **dưới 25%**.\n" +
+            "2.  100% xã/phường có bác sĩ hoạt động thường xuyên.\n" +
+            "3.  Tỷ lệ bao phủ bảo hiểm y tế đạt **ít nhất 50%** dân số vào năm 2010.\n\n" +
+            "Yêu cầu các đơn vị nghiêm túc triển khai thực hiện."
+    },
+    // 2. GIÁM SÁT RUBELLA (Năm 2010)
+    {
+        id: "d4",
+        title: "Công văn hướng dẫn giám sát Rubella và phòng chống Hội chứng Rubella bẩm sinh",
+        summary: "Bộ Y tế ban hành công văn về việc tăng cường giám sát Rubella ở phụ nữ trong độ tuổi sinh đẻ và các nhóm nguy cơ, khuyến cáo tiêm chủng bổ sung.",
+        docNumber: "567/BYT-DP",
+        category: "Y tế",
+        author: "Bộ Y tế",
+        publishedAt: "2010-03-25",
+        content: 
+            "Kính gửi: Ủy ban nhân dân các tỉnh, thành phố trực thuộc Trung ương.\n\n" +
+            "Để chủ động phòng, chống bệnh Rubella, đặc biệt là Hội chứng Rubella bẩm sinh, Bộ Y tế đề nghị Ủy ban nhân dân các tỉnh/thành phố chỉ đạo các đơn vị triển khai các nội dung sau:\n\n" +
+            "1.  Tăng cường giám sát Rubella:\n" +
+            "    - Tập trung vào phụ nữ trong độ tuổi sinh đẻ và các nhóm nguy cơ cao.\n" +
+            "    - Thực hiện xét nghiệm huyết thanh học cho tất cả các ca nghi ngờ.\n\n" +
+            "2.  Triển khai tiêm chủng bổ sung:\n" +
+            "    - Rà soát và tổ chức tiêm bổ sung vắc xin Sởi – Rubella (MR) cho các đối tượng nguy cơ.\n    - Đảm bảo tỷ lệ bao phủ vắc xin đạt trên 95% ở tất cả các tuyến.\n\n" +
+            "Bộ Y tế đề nghị các địa phương khẩn trương triển khai thực hiện."
+    },
+    // 3. SỬ DỤNG VẮC XIN 5 TRONG 1 (Năm 2013)
+    {
+        id: "d9",
+        title: "Công văn: Hướng dẫn sử dụng vắc xin phối hợp 5 trong 1 trong TCMR",
+        summary: "Bộ Y tế hướng dẫn chi tiết về lịch tiêm, đối tượng và quy trình giám sát sau tiêm chủng vắc xin 5 trong 1 Quinvaxem (hoặc tương đương) năm 2013.",
+        docNumber: "155/BYT-DP",
+        category: "Tiêm chủng",
+        author: "Bộ Y tế",
+        publishedAt: "2013-10-15",
+        content: 
+            "Kính gửi: Sở Y tế các tỉnh, thành phố trực thuộc Trung ương.\n\n" +
+            "Để đảm bảo triển khai thống nhất vắc xin 5 trong 1 trong Chương trình Tiêm chủng Mở rộng, Bộ Y tế hướng dẫn:\n\n" +
+            "1.  Lịch tiêm chủng:\n" +
+            "    - Mũi 1: 2 tháng tuổi.\n" +
+            "    - Mũi 2: 3 tháng tuổi.\n" +
+            "    - Mũi 3: 4 tháng tuổi.\n\n" +
+            "2.  Giám sát sau tiêm:\n" +
+            "    - Yêu cầu theo dõi sát 30 phút sau tiêm và theo dõi tại nhà trong 24 giờ.\n\n" +
+            "3.  Bảo quản:\n" +
+            "    - Vắc xin phải được bảo quản trong dây chuyền lạnh nghiêm ngặt từ 2°C đến 8°C."
+    },
+    // 4. BÁO CÁO CA BỆNH TRUYỀN NHIỄM KHẨN CẤP (Năm 2015)
+    {
+        id: "d3",
+        title: "CÔNG VĂN: QUY ĐỊNH BÁO CÁO CA BỆNH TRUYỀN NHIỄM KHẨN CẤP",
+        summary: "Cục Y tế Dự phòng quy định thời hạn và phương tiện báo cáo các ca bệnh truyền nhiễm khẩn cấp (Cúm A/H5N1, Ebola, MERS-CoV,...) từ cơ sở khám chữa bệnh trên toàn quốc, có hiệu lực từ năm 2015.",
+        docNumber: "789/CV-DP",
+        category: "Dịch bệnh khẩn cấp",
+        author: "Cục Y tế Dự phòng",
+        publishedAt: "2015-11-05",
+        content: 
+            "Kính gửi: Tất cả các cơ sở khám bệnh, chữa bệnh trên toàn quốc.\n\n" +
+            "Để tăng cường công tác kiểm soát dịch bệnh, đặc biệt là các bệnh truyền nhiễm nguy hiểm, Cục Y tế Dự phòng quy định mẫu và thời hạn báo cáo khẩn cấp như sau:\n\n" +
+            "1.  Các ca bệnh khẩn cấp (Cúm A/H5N1, Ebola, MERS-CoV,...) phải được báo cáo trong vòng **24 giờ** kể từ khi xác định ca bệnh.\n\n" +
+            "2.  Phương tiện báo cáo:\n" +
+            "    - Cập nhật ngay lập tức vào hệ thống phần mềm báo cáo bệnh truyền nhiễm quốc gia.\n    - Báo cáo bằng điện thoại hoặc fax trong trường hợp hệ thống mạng gặp sự cố.\n\n" +
+            "Yêu cầu các đơn vị triển khai thực hiện nghiêm túc từ ngày ký công văn."
+    },
+    // 5. PHÒNG CHỐNG DỊCH BỆNH ĐẦU NĂM (Năm 2016)
+    {
+        id: "d10",
+        title: "CÔNG ĐIỆN Về việc chủ động phòng chống dịch bệnh đầu năm",
+        summary: "Công điện khẩn về việc tăng cường giám sát và phòng chống các dịch bệnh truyền nhiễm lây qua đường hô hấp và tiêu hóa trong mùa lễ hội đầu năm 2016.",
+        docNumber: "123/CĐ-TTg",
+        category: "Dịch bệnh khẩn cấp",
+        author: "Thủ tướng Chính phủ",
+        publishedAt: "2016-02-05",
+        content: 
+            "THỦ TƯỚNG CHÍNH PHỦ điện:\n\n" +
+            "1. Chủ tịch Uỷ ban nhân dân các tỉnh, thành phố trực thuộc Trung ương:\n" +
+            "    - Tăng cường giám sát tại cửa khẩu và các khu vực tập trung đông người, đặc biệt là các lễ hội.\n" +
+            "    - Chủ động chuẩn bị đầy đủ thuốc, vật tư y tế, hóa chất phục vụ công tác phòng, chống dịch.\n" +
+            "    - Tổ chức vệ sinh môi trường, khử khuẩn tại các cơ sở giáo dục, khu du lịch.\n\n" +
+            "2. Bộ Y tế:\n" +
+            "    - Chủ động nắm bắt tình hình dịch bệnh trên thế giới và trong nước để có cảnh báo kịp thời.\n\n" +
+            "3. Các Bộ, ngành liên quan phối hợp chặt chẽ, đảm bảo thông tin thông suốt."
+    },
+    // 6. THANH TOÁN BHYT (Năm 2018)
+    {
+        id: "d11",
+        title: "Hướng dẫn thực hiện thanh toán chi phí khám chữa bệnh bảo hiểm y tế",
+        summary: "Bảo hiểm Xã hội Việt Nam hướng dẫn chi tiết về quy trình thẩm định và thanh toán chi phí khám chữa bệnh BHYT, áp dụng từ năm 2018.",
+        docNumber: "200/HD-BHXH",
+        category: "Bảo hiểm Y tế",
+        author: "BHXH Việt Nam",
+        publishedAt: "2018-08-01",
+        content: 
+            "Kính gửi: Bảo hiểm xã hội các tỉnh, thành phố trực thuộc Trung ương.\n\n" +
+            "Thực hiện Luật BHYT, BHXH Việt Nam hướng dẫn thống nhất việc thẩm định và thanh toán chi phí KCB BHYT:\n\n" +
+            "1.  Về hồ sơ:\n" +
+            "    - Yêu cầu các cơ sở KCB truyền dữ liệu đề nghị thanh toán lên Cổng tiếp nhận.\n\n" +
+            "2.  Về thanh toán:\n" +
+            "    - Thực hiện thanh toán theo định suất và theo giá dịch vụ y tế.\n" +
+            "    - Nghiêm cấm trục lợi quỹ BHYT dưới mọi hình thức."
+    },
+    // 7. QUẢN LÝ CHẤT THẢI (Năm 2019)
+    {
+        id: "d12",
+        title: "QUY CHẾ Quản lý chất thải y tế nguy hại và chất thải sinh hoạt tại cơ sở y tế",
+        summary: "Bộ Y tế ban hành quy chế mới về phân loại, thu gom, vận chuyển và xử lý chất thải y tế nhằm giảm thiểu ô nhiễm môi trường và bảo vệ sức khỏe cộng đồng.",
+        docNumber: "45/2019/TT-BYT",
+        category: "Môi trường Y tế",
+        author: "Bộ Y tế",
+        publishedAt: "2019-05-20",
+        content: 
+            "Kính gửi: Các cơ sở khám bệnh, chữa bệnh công lập và tư nhân.\n\n" +
+            "Thực hiện Luật Bảo vệ môi trường, Bộ Y tế ban hành Quy chế quản lý chất thải y tế nguy hại:\n\n" +
+            "1.  Phân loại:\n" +
+            "    - Chất thải lây nhiễm được phân loại ngay tại nơi phát sinh.\n" +
+            "    - Phân loại riêng chất thải sắc nhọn.\n\n" +
+            "2.  Thu gom và vận chuyển:\n" +
+            "    - Vận chuyển bằng xe chuyên dụng, đảm bảo an toàn tuyệt đối.\n\n" +
+            "3.  Xử lý:\n" +
+            "    - Yêu cầu xử lý bằng công nghệ đốt hoặc hấp tiệt trùng đối với chất thải lây nhiễm."
+    },
+    // 8. PHÒNG CHỐNG COVID-19 (Năm 2020)
+    {
+        id: "d13",
+        title: "CÔNG VĂN: Hướng dẫn tạm thời chẩn đoán và điều trị bệnh viêm đường hô hấp cấp do SARS-CoV-2 (COVID-19)",
+        summary: "Bộ Y tế ban hành hướng dẫn đầu tiên về chẩn đoán, phân loại mức độ và phác đồ điều trị ban đầu cho bệnh nhân COVID-19 tại Việt Nam, áp dụng từ tháng 3/2020.",
+        docNumber: "1000/BYT-KCB",
+        category: "Dịch bệnh khẩn cấp",
+        author: "Bộ Y tế",
+        publishedAt: "2020-03-05",
+        content: 
+            "Kính gửi: Các Bệnh viện, Viện có giường bệnh trực thuộc Bộ Y tế; Sở Y tế các tỉnh, thành phố trực thuộc Trung ương.\n\n" +
+            "Do tình hình dịch COVID-19 diễn biến phức tạp, Bộ Y tế ban hành Hướng dẫn tạm thời:\n\n" +
+            "1.  Chẩn đoán xác định:\n" +
+            "    - Dựa trên yếu tố dịch tễ, lâm sàng và kết quả xét nghiệm RT-PCR.\n\n" +
+            "2.  Điều trị:\n" +
+            "    - Điều trị triệu chứng và hỗ trợ hô hấp.\n\n" +
+            "3.  Nguyên tắc phòng lây nhiễm:\n" +
+            "    - Thực hiện cách ly nghiêm ngặt và sử dụng phương tiện phòng hộ cá nhân cấp 3."
+    },
+    // 9. PHỤC HỒI SAU ĐẠI DỊCH (Năm 2022)
+    {
+        id: "d14",
+        title: "Công văn: Đẩy mạnh các biện pháp phục hồi và phát triển hệ thống y tế sau đại dịch",
+        summary: "Công văn của Chính phủ về việc tăng cường đầu tư, đào tạo nhân lực và hoàn thiện cơ chế tài chính y tế để đối phó với các thách thức sức khỏe mới sau đại dịch COVID-19.",
+        docNumber: "77/CV-CP",
+        category: "Phát triển Y tế",
+        author: "Văn phòng Chính phủ",
+        publishedAt: "2022-09-12",
+        content: 
+            "Kính gửi: Các Bộ, cơ quan ngang Bộ, cơ quan thuộc Chính phủ.\n\n" +
+            "Sau thời gian dài chống dịch, hệ thống y tế cần được phục hồi và củng cố. Thủ tướng Chính phủ yêu cầu:\n\n" +
+            "1.  Về tài chính:\n" +
+            "    - Đảm bảo nguồn kinh phí ưu tiên cho y tế dự phòng và y tế cơ sở.\n\n" +
+            "2.  Về nhân lực:\n" +
+            "    - Xây dựng kế hoạch đào tạo lại, bồi dưỡng chuyên môn cho đội ngũ cán bộ y tế.\n\n" +
+            "3.  Về cơ sở vật chất:\n" +
+            "    - Khẩn trương hoàn thành các dự án đầu tư xây dựng, nâng cấp cơ sở khám chữa bệnh."
+    },
+    // 10. KẾ HOẠCH TIÊM CHỦNG MỞ RỘNG (Năm 2024)
+    {
+        id: "d1",
+        title: "QUYẾT ĐỊNH BAN HÀNH KẾ HOẠCH TIÊM CHỦNG MỞ RỘNG NĂM 2024",
+        summary: "Quyết định của Bộ Y tế về việc ban hành Kế hoạch Tiêm chủng mở rộng năm 2024, bao gồm mục tiêu tiêm chủng, chỉ tiêu giám sát bệnh và triển khai vắc xin mới (Rota, Td).",
+        docNumber: "1596/QĐ-BYT",
+        category: "Tiêm chủng",
+        author: "Bộ Y tế",
+        publishedAt: "2024-06-10",
+        content: 
+            "Kính gửi: Các đơn vị, địa phương, Giám đốc Sở Y tế các tỉnh, thành phố và Thủ trưởng các đơn vị có liên quan.\n\n" +
+            "Bộ Y tế ban hành Kế hoạch Tiêm chủng mở rộng năm 2024 nhằm duy trì thành quả và nâng cao hiệu quả công tác TCMR, đảm bảo cung ứng đầy đủ vắc xin và triển khai các vắc xin mới.\n\n" +
+            "I. MỤC TIÊU\n" +
+            "1.  Cung ứng đầy đủ vắc xin trong Chương trình TCMR.\n" +
+            "2.  Duy trì thành quả và nâng cao hiệu quả công tác TCMR.\n" +
+            "3.  Triển khai các vắc xin mới trong TCMR (**vắc xin Rota**, **Td**).\n\n" +
+            "II. CHỈ TIÊU CHUYÊN MÔN NĂM 2024 (Tóm tắt)\n" +
+            "1.  Tỷ lệ TCĐĐ các loại vắc xin cho trẻ em dưới 1 tuổi: **≥ 90%**\n" +
+            "2.  Tỷ lệ tiêm vắc xin Viêm gan B sơ sinh trong vòng 24 giờ: **≥ 90%**\n\n" +
+            "III. HOẠT ĐỘNG CHÍNH\n" +
+            "1.  Mua vắc xin cho các đối tượng trong Chương trình TCMR năm 2024 (11 loại vắc xin).\n" +
+            "2.  Tổ chức tiêm chủng các vắc xin trong TCMR đạt chỉ tiêu và an toàn, hiệu quả; tổ chức tiêm chủng thường xuyên ít nhất 2 lần/tháng.\n\n" +
+            "Yêu cầu các đơn vị, địa phương tổ chức triển khai thực hiện đảm bảo quy định."
+    },
+    // 11. CÔNG VĂN CẬP NHẬT LỊCH TIÊM CHỦNG MỞ RỘNG (Năm 2025)
+    {
+        id: "d5",
+        title: "Công văn về cập nhật lịch tiêm chủng mở rộng",
+        summary: "Công bố thay đổi lịch tiêm một số vắc xin trong chương trình tiêm chủng mở rộng từ quý II/2025, bao gồm lịch tiêm vắc xin 5 trong 1 và bổ sung mũi nhắc Sởi – Rubella.",
+        docNumber: "999/CT-TCMR",
+        category: "Tiêm chủng",
+        author: "Chương trình TCMR Quốc gia",
+        publishedAt: "2025-03-18",
+        content: 
+            "Kính gửi: Các Trung tâm Kiểm soát bệnh tật (CDC) tỉnh/thành phố.\n\n" +
+            "Để nâng cao hiệu quả phòng bệnh và đồng bộ với khuyến cáo quốc tế, Chương trình Tiêm chủng mở rộng Quốc gia thông báo điều chỉnh lịch tiêm một số vắc xin như sau:\n\n" +
+            "1.  Điều chỉnh lịch tiêm vắc xin 5 trong 1:\n" +
+            "    - Mũi tiêm thứ 3 sẽ được điều chỉnh từ 4 tháng tuổi lên 6 tháng tuổi.\n\n" +
+            "2.  Lịch tiêm nhắc lại Sởi – Rubella:\n" +
+            "    - Bổ sung tiêm nhắc lại vắc xin Sởi – Rubella cho trẻ 6 tuổi tại trường học.\n\n" +
+            "Đề nghị các đơn vị khẩn trương triển khai để áp dụng từ ngày 01/04/2025."
+    },
+    // 12. CÔNG VĂN HƯỚNG DẪN TỔ CHỨC CHIẾN DỊCH TIÊM CHỦNG BỔ SUNG (Năm 2025)
+    {
+        id: "d6",
+        title: "Công văn: Hướng dẫn tổ chức chiến dịch tiêm chủng bổ sung 2025",
+        summary: "Bộ Y tế hướng dẫn chi tiết về tổ chức chiến dịch tiêm chủng bổ sung tại các vùng có nguy cơ bùng phát, bao gồm công tác logistics và giám sát phản ứng sau tiêm.",
+        docNumber: "345/BYT-DP",
+        category: "Tiêm chủng",
+        author: "Bộ Y tế",
+        publishedAt: "2025-04-01",
+        content: 
+            "Kính gửi: Sở Y tế các tỉnh, thành phố trọng điểm.\n\n" +
+            "Để đảm bảo miễn dịch cộng đồng tại các khu vực nguy cơ cao, Bộ Y tế hướng dẫn tổ chức chiến dịch tiêm chủng bổ sung như sau:\n\n" +
+            "1.  Lập danh sách đối tượng:\n" +
+            "    - Lập danh sách chi tiết các đối tượng chưa được tiêm đủ mũi hoặc chưa rõ tiền sử tiêm chủng.\n\n" +
+            "2.  Công tác logistics:\n" +
+            "    - Đảm bảo dây chuyền lạnh hoạt động 24/7.\n    - Phân phối vắc xin kịp thời, tránh thất thoát.\n\n" +
+            "Công văn này thay thế các hướng dẫn trước đây."
+    },
+    // 13. KẾT LUẬN CUỘC HỌP BAN CHỈ ĐẠO (Năm 2025)
+    {
+        id: "d7",
+        title: "THÔNG BÁO KẾT LUẬN CUỘC HỌP BAN CHỈ ĐẠO NGÀNH",
+        summary: "Tổng hợp các chỉ đạo mới nhất từ Ban Chỉ đạo cấp Bộ/Sở về việc nâng cao chất lượng dịch vụ y tế và tăng cường kỷ luật, kỷ cương hành chính.",
+        docNumber: "38/TB-BCĐ",
+        category: "Hành chính Y tế",
+        author: "Văn phòng Ban Chỉ đạo",
+        publishedAt: "2025-09-05",
+        content: 
+            "Kính gửi: Thủ trưởng các đơn vị trực thuộc ngành Y tế.\n\n" +
+            "Ban Chỉ đạo (BCĐ) ngành Y tế đã họp và đưa ra các kết luận, chỉ đạo sau. Yêu cầu các đơn vị nghiêm túc thực hiện:\n\n" +
+            "**1. Nâng cao chất lượng dịch vụ y tế và sự hài lòng của người bệnh, người dân**\n" +
+            "    - Tiếp tục triển khai thực hiện tốt Quy tắc ứng xử của công chức, viên chức, người lao động tại cơ quan, đơn vị y tế. **Thực hiện Quy tắc ứng xử không chỉ ở những nơi tiếp xúc trực tiếp với người bệnh** mà tại tất cả các vị trí làm việc.\n\n" +
+            "**2. Tăng cường kỷ luật, kỷ cương hành chính**\n" +
+            "    - Tăng cường công tác kiểm tra, giám sát thường xuyên và đột xuất việc chấp hành kỷ luật, kỷ cương hành chính, giờ giấc làm việc của công chức, viên chức.\n" +
+            "    - **Nghiêm cấm các trường hợp công chức, viên chức, người lao động đi muộn, về sớm, bỏ vị trí làm việc** mà không có lý do chính đáng.\n\n" +
+            "Thủ trưởng các đơn vị chịu trách nhiệm trước BCĐ về việc triển khai và kết quả thực hiện các nội dung trên."
+    }
+];
+
+    function formatVietnameseDate(dateStr) {
+      const date = new Date(dateStr);
+      const day = date.getDate();
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
+      // Giả định địa danh là Hà Nội cho mẫu demo
+      return `Hà Nội, ngày ${day} tháng ${month} năm ${year}`; 
+    }
+
+    // Component hiển thị danh sách công văn
+    function ArticleListView({ articles, query, setQuery, bookmarks, toggleBookmark, setSelectedArticle }) {
+      const filtered = articles
+        .filter(a => {
+          if (!query.trim()) return true;
+          const q = query.toLowerCase();
+          return (
+            a.title.toLowerCase().includes(q) ||
+            a.summary.toLowerCase().includes(q) ||
+            a.content.toLowerCase().includes(q)
+          );
+        })
+        .sort((x, y) => new Date(y.publishedAt) - new Date(x.publishedAt)); // Sắp xếp theo ngày mới nhất lên đầu
+
+      return (
+        <section className="md:col-span-2">
+          <div className="bg-white rounded-2xl shadow p-4">
+            <h2 className="text-lg font-medium mb-3">Danh sách công văn</h2>
+
+            {filtered.length === 0 ? (
+              <div className="text-sm text-gray-500">Không tìm thấy công văn phù hợp.</div>
+            ) : (
+              <ul className="space-y-4">
+                {filtered.map(a => (
+                  <li key={a.id} className="border rounded-lg p-4 hover:shadow-md transition bg-gray-50">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold">{a.title}</h3>
+                        <div className="text-xs text-gray-500 mb-2">{a.author} — {a.publishedAt}</div>
+                        <p className="text-sm text-gray-700 mb-2">{a.summary}</p>
+                        <div className="mt-2 flex gap-2 items-center text-sm text-gray-500">
+                          <span className="px-2 py-0.5 bg-gray-100 rounded-full">{a.category}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-end ml-3 gap-2">
+                        <button
+                            onClick={() => setSelectedArticle(a)}
+                            className="px-3 py-1 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                        >
+                            Xem
+                        </button>
+                        <button
+                          onClick={() => toggleBookmark(a.id)}
+                          className="px-3 py-1 bg-white border rounded-lg text-sm"
+                        >
+                          {bookmarks.includes(a.id) ? "Bỏ lưu" : "Lưu"}
+                        </button>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+      );
+    }
+
+    // Component hiển thị toàn văn công văn theo chuẩn hành chính
+    function ArticleView({ article, setSelectedArticle }) {
+      const { title, docNumber, author, publishedAt, content } = article;
+      const formattedDate = formatVietnameseDate(publishedAt);
+      
+      // Xử lý nội dung để tách đoạn và căn chỉnh
+      const contentWithParagraphs = content.trim().split('\n\n').map((paragraph, index) => {
+        // Xử lý Kính gửi/Điện (không thụt đầu dòng)
+        if (index === 0 && paragraph.trim().toLowerCase().startsWith("kính gửi:") || paragraph.trim().toLowerCase().startsWith("thủ tướng chính phủ điện:")) {
+          return `<p class="doc-to">${paragraph.trim()}</p>`;
+        }
+        
+        // Tách các dòng bên trong một đoạn lớn (ví dụ: các mục liệt kê)
+        const lines = paragraph.trim().split('\n').map((line, lineIndex) => {
+            // Xử lý in đậm
+            let processedLine = line.trim().replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').trim(); 
+            
+            // Loại bỏ dấu gạch ngang (-) 
+            const isSubItem = processedLine.startsWith('-');
+            if(isSubItem) {
+                processedLine = processedLine.substring(1).trim();
+            }
+
+            // Nếu là dòng liệt kê (thụt vào)
+            if (isSubItem || line.trim().startsWith('    -')) {
+                return `<p class="no-indent">${processedLine}</p>`;
+            }
+            // Nếu không phải đoạn đầu (Kính gửi/Điện) và là đoạn có thụt đầu dòng
+            if (lineIndex === 0) {
+                 return `<p>${processedLine}</p>`;
+            }
+            // Các dòng còn lại trong đoạn lớn (đã được xử lý thành p.no-indent bên trên)
+            return '';
+        });
+
+        // Chỉ trả về các dòng không rỗng
+        return lines.filter(Boolean);
+      }).flat();
+
+      return (
+        <div className="md:col-span-3">
+            <div className="mb-4">
+                <button
+                    onClick={() => setSelectedArticle(null)}
+                    className="flex items-center px-4 py-2 bg-gray-200 rounded-lg text-gray-800 text-sm hover:bg-gray-300 transition"
+                >
+                    <span className="text-lg mr-2">←</span> Quay lại danh sách
+                </button>
+            </div>
+            
+            <div className="official-doc max-w-4xl mx-auto rounded-2xl">
+                {/* Quốc hiệu - Tiêu ngữ */}
+                <div className="grid grid-cols-2 national-header">
+                    <div className="agency">
+                        {author.toUpperCase()}
+                        <div className="underline w-2/3 mx-0 mt-1"></div>
+                    </div>
+                    <div className="text-center">
+                        <div className="country-name">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                        <div className="motto">Độc lập – Tự do – Hạnh phúc</div>
+                        <div className="underline"></div>
+                    </div>
+                </div>
+
+                {/* Số hiệu - Ngày tháng */}
+                <div className="grid grid-cols-2 doc-info">
+                    <div className="text-left font-normal">
+                        Số: {docNumber}
+                    </div>
+                    <div className="doc-meta">
+                        {formattedDate}
+                    </div>
+                </div>
+
+                {/* Tiêu đề */}
+                <h2 className="doc-title">{title}</h2>
+
+                {/* Nội dung chính */}
+                <div className="doc-content">
+                  <div dangerouslySetInnerHTML={{ __html: contentWithParagraphs.join('') }}></div>
+                </div>
+
+                {/* Chữ ký (Mô phỏng) */}
+                <div className="text-right mt-16 doc-info">
+                  <div className="agency">
+                    THỦ TRƯỞNG CƠ QUAN
+                  </div>
+                  <div className="font-normal">(Ký tên và đóng dấu — Không cần ảnh)</div>
+                  <div className="agency mt-1">
+                    {author.toUpperCase()}
+                  </div>
+                </div>
+            </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [articles] = useState(sampleArticles);
+      const [query, setQuery] = useState("");
+      const [selectedArticle, setSelectedArticle] = useState(null); 
+      const [bookmarks, setBookmarks] = useState(() => {
+        try {
+          const raw = localStorage.getItem("nr_bookmarks_v2"); 
+          return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          return [];
+        }
+      });
+
+      useEffect(() => {
+        localStorage.setItem("nr_bookmarks_v2", JSON.stringify(bookmarks));
+      }, [bookmarks]);
+
+      function toggleBookmark(id) {
+        setBookmarks(prev => (prev.includes(id) ? prev.filter(p => p !== id) : [id, ...prev]));
+      }
+      
+      const bookmarkedArticles = bookmarks.map(id => articles.find(x => x.id === id)).filter(Boolean);
+
+      return (
+        <div className="min-h-screen p-4 md:p-8">
+          <header className="max-w-5xl mx-auto mb-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl md:text-3xl font-semibold">News Reader — Công văn y tế</h1>
+              <div className="text-sm text-gray-600">Các công văn, hướng dẫn và quy định về y tế (Dữ liệu mẫu 2000-2025)</div>
+            </div>
+            
+            {!selectedArticle && (
+              <div className="mt-4 grid gap-3 md:grid-cols-3">
+                <input
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  placeholder="Tìm công văn theo tiêu đề, nội dung..."
+                  className="col-span-2 p-2 rounded-lg border border-gray-200 shadow-sm"
+                />
+                <div className="p-2 rounded-lg border border-gray-200 shadow-sm flex items-center justify-between">
+                  <div>Toàn bộ là công văn y tế</div>
+                  <button className="ml-2 px-2 py-1 text-sm border rounded" onClick={() => setQuery('')}>
+                    Reset
+                  </button>
+                </div>
+              </div>
+            )}
+          </header>
+
+          <main className="max-w-5xl mx-auto grid gap-6 md:grid-cols-3">
+            {selectedArticle ? (
+              <ArticleView article={selectedArticle} setSelectedArticle={setSelectedArticle} />
+            ) : (
+              <>
+                <ArticleListView
+                  articles={articles}
+                  query={query}
+                  setQuery={setQuery}
+                  bookmarks={bookmarks}
+                  toggleBookmark={toggleBookmark}
+                  setSelectedArticle={setSelectedArticle} 
+                />
+
+                <aside className="md:col-span-1">
+                  <div className="bg-white rounded-2xl shadow p-4 sticky top-6">
+                    <h4 className="font-medium mb-3">Đã lưu</h4>
+                    {bookmarkedArticles.length === 0 ? (
+                      <div className="text-sm text-gray-500">Chưa có công văn nào được lưu.</div>
+                    ) : (
+                      <ul className="space-y-2 text-sm">
+                        {bookmarkedArticles.map(a => (
+                          <li key={a.id} className="flex items-center justify-between">
+                            <div className="truncate pr-2 hover:underline cursor-pointer" onClick={() => setSelectedArticle(a)}>{a.title}</div>
+                            <button onClick={() => toggleBookmark(a.id)} className="text-xs px-2 py-1 border rounded">Xóa</button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <div className="mt-4 text-xs text-gray-500">Mẫu demo — thay bằng dữ liệu thật nếu cần.</div>
+                  </div>
+                </aside>
+              </>
+            )}
+          </main>
+
+          <footer className="max-w-5xl mx-auto mt-8 text-center text-sm text-gray-500">
+            © News Reader — Công văn y tế (Hiển thị toàn bộ nội dung chuẩn hành chính)
+          </footer>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
