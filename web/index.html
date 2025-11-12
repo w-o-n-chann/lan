@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang Đọc Văn Bản Bộ Y Tế Offline</title>
+    <style>
+        /* CSS cho giao diện */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #e9ecef; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
+        h1 { color: #007bff; text-align: center; margin-bottom: 15px; }
+        #total-count { text-align: center; font-weight: bold; margin-bottom: 25px; color: #343a40; }
+        .document-item { border: 1px solid #dee2e6; border-left: 5px solid #007bff; padding: 15px; margin-bottom: 20px; border-radius: 4px; background-color: #f8f9fa; }
+        .document-item h3 { margin-top: 0; color: #343a40; font-size: 1.25em; }
+        .document-item p { margin: 5px 0; color: #6c757d; }
+        .document-item strong { color: #343a40; }
+        .document-item a { color: #28a745; text-decoration: none; font-weight: 600; }
+        .document-item a:hover { text-decoration: underline; color: #1e7e34; }
+        #loading-message { text-align: center; padding: 50px; font-size: 1.1em; color: #dc3545; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Văn Bản Quy Phạm Pháp Luật & Chỉ Đạo Bộ Y Tế</h1>
+        <div id="total-count"></div>
+        
+        <div id="document-list">
+            <div id="loading-message">
+                Đang tải dữ liệu. Vui lòng chạy file Python **scraper.py** trước nếu bạn chưa có file **van_ban_byt.json**.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const documentListDiv = document.getElementById('document-list');
+            const totalCountDiv = document.getElementById('total-count');
+            
+            const dataFile = 'van_ban_byt.json'; 
+
+            fetch(dataFile)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Lỗi ${response.status}: Không tìm thấy file dữ liệu (${dataFile}).`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    documentListDiv.innerHTML = ''; // Xóa thông báo loading
+                    totalCountDiv.textContent = `Số lượng văn bản đã crawl: ${data.length} (Dữ liệu cục bộ)`;
+                    
+                    if (data.length === 0) {
+                        documentListDiv.innerHTML = '<p>Không tìm thấy văn bản nào trong file dữ liệu JSON.</p>';
+                        return;
+                    }
+
+                    // Sắp xếp dữ liệu theo ngày ban hành giảm dần (từ mới đến cũ)
+                    // (Lưu ý: việc sắp xếp bằng JavaScript có thể không hoàn hảo 100% nếu format ngày tháng không nhất quán)
+                    
+                    data.forEach(doc => {
+                        const item = document.createElement('div');
+                        item.className = 'document-item';
+                        
+                        const fileLink = doc['Link file'];
+                        
+                        item.innerHTML = `
+                            <h3>${doc['Trích yếu']}</h3>
+                            <p><strong>Ký hiệu:</strong> ${doc['Ký hiệu']} &bull; <strong>Ngày ban hành:</strong> ${doc['Ban hành']}</p>
+                            <p><strong>Đơn vị ban hành:</strong> ${doc['Đơn vị ban hành']}</p>
+                            <p>
+                                <a href="${fileLink || '#'}" target="_blank" title="Mở trong tab mới">
+                                    ${fileLink ? 'Xem nội dung full (Mở link gốc trên trang BYT)' : 'Không có file đính kèm'}
+                                </a>
+                            </p>
+                        `;
+                        documentListDiv.appendChild(item);
+                    });
+                })
+                .catch(error => {
+                    documentListDiv.innerHTML = `<p id="loading-message" style="color: red;">Lỗi: ${error.message} <br> **QUAN TRỌNG:** Bạn cần chạy file **scraper.py** trong Terminal để tạo file **van_ban_byt.json** trước khi xem.</p>`;
+                    console.error('Lỗi khi fetch dữ liệu:', error);
+                });
+        });
+    </script>
+
+</body>
+</html>
